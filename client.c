@@ -6,7 +6,7 @@
 /*   By: sbouchib <sbouchib@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/25 10:00:00 by lwesswess         #+#    #+#             */
-/*   Updated: 2026/01/30 16:55:24 by sbouchib         ###   ########.fr       */
+/*   Updated: 2026/02/24 12:38:47 by sbouchib         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ static void	send_char(int pid, char c)
 			}
 		}
 		bit++;
-		usleep(600);
+		usleep(200);
 	}
 }
 

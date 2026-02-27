@@ -6,59 +6,86 @@
 /*   By: sbouchib <sbouchib@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/25 10:00:00 by lwesswess         #+#    #+#             */
-/*   Updated: 2026/02/16 15:25:35 by sbouchib         ###   ########.fr       */
+/*   Updated: 2026/02/27 10:30:12 by sbouchib         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minitalk.h"
 
-void	ft_putchar(char c)
+static char	*ft_grow(char *old, int old_len, int new_cap)
 {
-	write(1, &c, 1);
+	char	*new;
+	int		i;
+
+	new = malloc(new_cap);
+	if (!new)
+	{
+		free(old);
+		return (NULL);
+	}
+	i = 0;
+	while (i < old_len)
+	{
+		new[i] = old[i];
+		i++;
+	}
+	free(old);
+	return (new);
 }
 
-void	ft_putstr(char *str)
+static void	flush_buf(t_buf *buf)
 {
-	while (*str)
-		ft_putchar(*str++);
+	if (buf->str)
+	{
+		write(1, buf->str, buf->len);
+		free(buf->str);
+		buf->str = NULL;
+	}
+	write(1, "\n", 1);
+	buf->len = 0;
+	buf->cap = 0;
 }
 
-void	ft_putnbr(int n)
+static void	append_buf(t_buf *buf, char c)
 {
-	if (n == -2147483648)
+	if (buf->len >= buf->cap)
 	{
-		ft_putstr("-2147483648");
-		return ;
+		if (buf->cap == 0)
+			buf->cap = 128;
+		else
+			buf->cap *= 2;
+		buf->str = ft_grow(buf->str, buf->len, buf->cap);
+		if (!buf->str)
+		{
+			buf->len = 0;
+			buf->cap = 0;
+			return ;
+		}
 	}
-	if (n < 0)
-	{
-		ft_putchar('-');
-		n = -n;
-	}
-	if (n >= 10)
-		ft_putnbr(n / 10);
-	ft_putchar(n % 10 + '0');
+	buf->str[buf->len] = c;
+	buf->len++;
 }
 
 static void	signal_handler(int signum, siginfo_t *info, void *context)
 {
-	static int	bit = 0;
-	static int	c = 0;
+	static int		bit = 0;
+	static int		c = 0;
+	static t_buf	buf;
 
 	(void)context;
-	(void)info;
 	if (signum == SIGUSR1)
 		c |= (1 << bit);
 	bit++;
 	if (bit == 8)
 	{
 		if (c == '\0')
-			ft_putchar('\n');
+			flush_buf(&buf);
 		else
-			ft_putchar(c);
+			append_buf(&buf, c);
 		bit = 0;
 		c = 0;
 	}
+	kill(info->si_pid, SIGUSR1);
 }
 
 int	main(void)
@@ -71,6 +98,8 @@ int	main(void)
 	sa.sa_sigaction = signal_handler;
 	sa.sa_flags = SA_SIGINFO;
 	sigemptyset(&sa.sa_mask);
+	sigaddset(&sa.sa_mask, SIGUSR1);
+	sigaddset(&sa.sa_mask, SIGUSR2);
 	if (sigaction(SIGUSR1, &sa, NULL) == -1)
 	{
 		ft_putstr("Error: sigaction failed\n");

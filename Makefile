@@ -18,8 +18,8 @@ CLIENT = client
 SERVER_BONUS = server_bonus
 CLIENT_BONUS = client_bonus
 
-SERVER_SRC = server.c
-CLIENT_SRC = client.c
+SERVER_SRC = server.c utils.c
+CLIENT_SRC = client.c utils.c
 SERVER_BONUS_SRC = server_bonus.c
 CLIENT_BONUS_SRC = client_bonus.c
 

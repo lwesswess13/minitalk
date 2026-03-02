@@ -6,7 +6,7 @@
 /*   By: sbouchib <sbouchib@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/25 10:00:00 by lwesswess         #+#    #+#             */
-/*   Updated: 2026/02/27 10:30:12 by sbouchib         ###   ########.fr       */
+/*   Updated: 2026/03/02 10:48:53 by sbouchib         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,24 +26,6 @@ static void	ft_putstr_error(char *str)
 		write(2, str++, 1);
 }
 
-static void	send_bit(int pid, int bit_val)
-{
-	int	sig;
-
-	g_ack = 0;
-	if (bit_val)
-		sig = SIGUSR1;
-	else
-		sig = SIGUSR2;
-	if (kill(pid, sig) == -1)
-	{
-		ft_putstr_error("Error: kill failed\n");
-		exit(1);
-	}
-	while (!g_ack)
-		usleep(50);
-}
-
 static void	send_char(int pid, char c)
 {
 	int	bit;
@@ -51,7 +33,13 @@ static void	send_char(int pid, char c)
 	bit = 0;
 	while (bit < 8)
 	{
-		send_bit(pid, (c >> bit) & 1);
+		g_ack = 0;
+		if ((c >> bit) & 1)
+			kill(pid, SIGUSR1);
+		else
+			kill(pid, SIGUSR2);
+		while (!g_ack)
+			usleep(200);
 		bit++;
 	}
 }

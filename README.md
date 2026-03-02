@@ -1,4 +1,4 @@
-*Ce projet a été réalisé dans le cadre du cursus 42 par **sbouchib**.*
+*Ce projet a été réalisé dans le cadre du cursus 42 par *sbouchib*.*
 
 # Minitalk
 

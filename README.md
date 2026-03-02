@@ -1,106 +1,84 @@
+*Ce projet a été réalisé dans le cadre du cursus 42 par **sbouchib**.*
+
 # Minitalk
 
-Communication entre processus via signaux UNIX.
+## Description
 
-## Compilation
+Minitalk est un petit projet de communication inter-processus (IPC). L'objectif est de construire un **client** et un **serveur** qui communiquent exclusivement via les signaux UNIX (`SIGUSR1` et `SIGUSR2`).
+
+Le client prend en arguments le PID du serveur et un message texte, puis transmet le message bit par bit à l'aide de signaux. Le serveur reçoit les signaux, reconstruit chaque caractère bit par bit, et affiche le message sur la sortie standard.
+
+### Fonctionnement
+
+- Chaque caractère est envoyé sous forme de 8 bits (LSB en premier).
+- `SIGUSR1` encode un bit à **1**, `SIGUSR2` encode un bit à **0**.
+- Après chaque bit, le serveur renvoie `SIGUSR1` au client comme accusé de réception (ACK), garantissant une communication synchronisée et fiable.
+- Le serveur écrit chaque caractère directement avec `write()` dès que 8 bits sont reçus (pas de buffer, pas de `malloc`).
+- Lorsque le serveur reçoit un caractère nul (`'\0'`), il affiche un retour à la ligne pour marquer la fin du message.
+
+### Fonctionnalités bonus
+
+- Le client bonus affiche `"Message received by server!"` une fois que le message complet a été acquitté.
+
+## Instructions
+
+### Compilation
 
 ```bash
-make        # Compile server et client
-make bonus  # Compile les versions bonus
-make clean  # Supprime les .o
-make fclean # Supprime tout
-make re     # Recompile tout
+make          # Compile server et client (obligatoire)
+make bonus    # Compile server_bonus et client_bonus
+make clean    # Supprime les fichiers objets
+make fclean   # Supprime les fichiers objets et les binaires
+make re       # Recompilation complète
 ```
 
-## Utilisation
+### Exécution
 
-### 1. Lancer le serveur
 ```bash
+# 1. Lancer le serveur dans un terminal (il affiche son PID)
 ./server
-# Affiche: Server PID: 12345
+# Server PID: 12345
+
+# 2. Dans un autre terminal, envoyer un message
+./client 12345 "Hello, World!"
 ```
 
-### 2. Envoyer un message
-```bash
-./client 12345 "Hello World!"
-```
-
-### Version Bonus
+Bonus :
 ```bash
 ./server_bonus
+# Server PID: 12345
+
 ./client_bonus 12345 "Hello!"
-# Affiche: Message received by server!
+# Le client affiche : Message received by server!
 ```
 
-## Tests rapides
+### Structure du projet
 
-```bash
-# Test basique
-./client <PID> "Bonjour"
-
-# Caractères spéciaux
-./client <PID> 'Test !@#$%^&*()'
-
-# Message long
-./client <PID> 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-
-# Erreur: sans arguments
-./client
-
-# Erreur: PID invalide
-./client -1 test
-./client 99999999 test
+```
+minitalk/
+├── minitalk.h          # Header (obligatoire)
+├── minitalk_bonus.h    # Header (bonus)
+├── server.c            # Serveur — gestionnaire de signal + main
+├── client.c            # Client — envoi des bits + main
+├── utils.c             # ft_putchar, ft_putstr, ft_putnbr, ft_atoi
+├── server_bonus.c      # Serveur bonus (même logique)
+├── client_bonus.c      # Client bonus (avec message de confirmation)
+├── utils_bonus.c       # Mêmes utils pour le bonus
+├── Makefile            # Règles de compilation
+└── DOCUMENTATION.md    # Explication détaillée fonction par fonction
 ```
 
----
+## Ressources
 
-## Notions à comprendre
+- [Page man `signal(7)`](https://man7.org/linux/man-pages/man7/signal.7.html) — Vue d'ensemble des signaux UNIX.
+- [Page man `sigaction(2)`](https://man7.org/linux/man-pages/man2/sigaction.2.html) — L'appel système `sigaction`.
+- [Page man `kill(2)`](https://man7.org/linux/man-pages/man2/kill.2.html) — Envoi de signaux à des processus.
+- [Opérateurs bit à bit en C](https://www.geeksforgeeks.org/bitwise-operators-in-c-cpp/) — Explication de `>>`, `<<`, `|`, `&` utilisés pour la manipulation de bits.
 
-### 1. Signaux UNIX
-Les signaux sont des interruptions logicielles envoyées à un processus.
-- `SIGUSR1` et `SIGUSR2` : signaux personnalisables par l'utilisateur
-- `kill(pid, signal)` : envoie un signal à un processus
-- `sigaction()` : configure comment réagir à un signal
+### Utilisation de l'IA
 
-### 2. Communication bit par bit
-Chaque caractère (8 bits) est envoyé un bit à la fois :
-- **SIGUSR1** = bit à 1
-- **SIGUSR2** = bit à 0
+L'IA (GitHub Copilot) a été utilisée pour :
+- **Documentation** : génération de pages de documentations.
+- **Débogage** : identification de la raison pour laquelle IntelliSense de VSCode signalait des erreurs sur `sigaction`/`siginfo_t` (`_POSIX_C_SOURCE` manquant pour le linter).
 
-Exemple pour 'A' (ASCII 65 = `01000001`) :
-```
-Bit 0: 1 → SIGUSR1
-Bit 1: 0 → SIGUSR2
-Bit 2: 0 → SIGUSR2
-...
-```
-
-### 3. Opérations binaires
-```c
-c |= (1 << bit);  // Met le bit à 1
-(c >> bit) & 1    // Lit le bit
-```
-
-### 4. Variables static
-```c
-static int bit = 0;  // Garde sa valeur entre les appels
-```
-
-### 5. PID (Process ID)
-Chaque processus a un identifiant unique. `getpid()` retourne le PID du processus courant.
-
-### 6. sigaction vs signal
-`sigaction()` est plus fiable que `signal()` :
-- Comportement portable
-- Plus d'options (SA_SIGINFO pour recevoir des infos sur l'expéditeur)
-
----
-
-## Fichiers
-
-| Fichier | Description |
-|---------|-------------|
-| `server.c` | Reçoit et affiche les messages |
-| `client.c` | Envoie les messages bit par bit |
-| `minitalk.h` | Header commun |
-| `*_bonus.c` | Versions avec accusé de réception |
+L'IA n'a pas été utilisée pour écrire la logique principale des le depart — l'encodage/décodage bit par bit, la gestion des signaux et le mécanisme d'ACK ont été implémentés manuellement.
